@@ -1,0 +1,23 @@
+{
+  "name": "octree-visualizer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heartgg/octree-visualizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/heartgg/octree-visualizer/issues"
+  },
+  "homepage": "https://github.com/heartgg/octree-visualizer#readme",
+  "dependencies": {
+    "@types/three": "^0.137.0"
+  }
+}
