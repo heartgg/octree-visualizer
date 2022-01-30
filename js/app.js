@@ -8,18 +8,19 @@ var cubeNum = 0;
 const tolerance = .1;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer();
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.SphereGeometry(.1, 3, 2);
-const material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+const dotGeometry = new THREE.BufferGeometry();
+dotGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute(new THREE.Vector3().toArray(), 3));
+const dotMaterial = new THREE.PointsMaterial( { size: 0.1 } );
 const cubes = [];
 
 data.forEach(coord => {
-    const cube = new THREE.Mesh( geometry, material );
+    const cube = new THREE.Points(dotGeometry, dotMaterial);
     cube.position.add(new THREE.Vector3(1, 1, 1).randomDirection().multiplyScalar(10));
     scene.add(cube);
     cubes.push(cube);
@@ -27,22 +28,21 @@ data.forEach(coord => {
 
 camera.position.z = 5;
 
-const controls = new OrbitControls( camera, renderer.domElement );
+const controls = new OrbitControls(camera, renderer.domElement);
 
 function animate() {
 
     const destination = new THREE.Vector3(data[cubeNum].x, data[cubeNum].y, data[cubeNum].z);
 
     if (destination.distanceTo(cubes[cubeNum].position) > tolerance) {
-        requestAnimationFrame( animate );
-    } else {
+        cubes[cubeNum].position.lerp(destination, .01);
+    } else if (cubeNum + 1 < cubes.length) {
         cubeNum++;
-        if (cubeNum + 1 <= cubes.length) requestAnimationFrame( animate );
     }
 
-    cubes[cubeNum].position.lerp(destination, .01);
+    renderer.render(scene, camera);
 
-    renderer.render( scene, camera );
+    requestAnimationFrame(animate);
 };
 
 animate();
