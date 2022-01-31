@@ -17,6 +17,7 @@ body {
 }
 
 #text{
+    width: 32%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     position: absolute;
     top: 50%;
@@ -24,6 +25,11 @@ body {
     color: white;
     transform: translate(-50%,-50%);
     -ms-transform: translate(-50%,-50%);
+}
+
+#text p{
+    text-align: justify;
+    text-justify: auto;
 }
 
 #button{
@@ -37,7 +43,7 @@ body {
     color: white;
     background-color: rgba(0,0,0,.2);
     position: relative;
-    margin-top: 10%;
+    margin-top: 40px;
     left: 50%;
     width: 120px;
     transform: translate(-50%,-50%);
