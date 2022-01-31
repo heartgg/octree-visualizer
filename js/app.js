@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'orbitcontrols';
 import { Octree } from './octree.js';
+import { sleep } from './utils.js';
 
 const data = [
     {x: 2, y: -2, z: 2},
@@ -19,6 +20,14 @@ data.forEach(coord => {
 
 var pointNum = 0;
 const tolerance = .01;
+var manualCam = false;
+
+document.getElementById('button').onclick = async function() {
+    manualCam = true;
+    document.getElementById("overlay").style.opacity = 0;
+    await sleep(500);
+    document.getElementById("overlay").style.display = "none";
+}
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -41,7 +50,13 @@ for (let i = 0; i < data.length; i++) {
     points.push(point);
 }
 
-camera.position.z = 20;
+var camera_pivot = new THREE.Object3D();
+var Y_AXIS = new THREE.Vector3( 0, 1, 0 );
+
+scene.add( camera_pivot );
+camera_pivot.add( camera );
+camera.position.set( 0, 15, 25 );
+camera.lookAt( camera_pivot.position );
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -59,6 +74,8 @@ function animate() {
             pointNum++;
         }
     }
+
+    if (!manualCam) camera_pivot.rotateOnAxis( Y_AXIS, 0.005 );
     
     renderer.render(scene, camera);
 

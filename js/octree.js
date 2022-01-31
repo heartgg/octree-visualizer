@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { sleep } from './utils.js';
 
 // These vectors are for creating octants
 // ex. tLb stands for topLeftBack, bRf stands for bottomRightFront
@@ -26,11 +27,13 @@ export class Octree {
         this.cube = new THREE.LineSegments(edges, new THREE.LineBasicMaterial( { color: 0xffffff } ));
 
         this.cube.visible = false;
+        this.cube.material.transparent = true;
+        this.cube.material.opacity = 0;
         this.cube.position.add(center);
         this.scene.add(this.cube);
     }
 
-    insert (coord) {
+    async insert (coord) {
         // If octree has nodes, find approperiate octant and insert the coordinate (keeps recursion)
         if (Object.keys(this.nodes).length !== 0) {
             const multiplier = new THREE.Vector3();
@@ -47,6 +50,11 @@ export class Octree {
         } else if (this.coord === 0) {
             this.coord = coord;
             this.cube.visible = true;
+            for (let i = 0; i < 100; i++) {
+                this.cube.material.opacity += 1 / 100;
+                console.log(this.cube.material.opacity);
+                await sleep(5);
+            }
         // If octree has no nodes but has a coordinate, add nodes, re-insert original coordinate, and insert actual coordinate (keeps recursion)
         } else {
             this.addNodes();
