@@ -12,7 +12,18 @@
         <div id="text">
             <h1>The Octree Data Structure</h1>
             <p>Octree refers to a data structure where every parent node has eight child nodes. Octrees are generated recursively and are often used in 3D graphics. One application is downsampling a pointcloud to yield an accurate representation of 3D space with less points.</p>
-            <button id="button">BEGIN</button>
+            <!-- <button type="submit" id="button">BEGIN</button> -->
+            <form id="myForm">
+                <label class="button">
+                    <input type="file" id="csvFile" accept=".csv" />
+                    CSV
+                </label>
+                <label class="button">
+                    <input type="submit" id="begin" value="Submit" />
+                    EXPLORE
+                </label>
+                
+            </form>
         </div>
     </div>
     <script type="importmap">

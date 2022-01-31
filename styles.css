@@ -13,7 +13,7 @@ body {
     bottom: 0;
     background-color: rgba(0,0,0,.7); /* Black background with opacity */
     z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
-    transition: .5s ease;
+    transition: .3s ease;
 }
 
 #text{
@@ -53,4 +53,36 @@ body {
 #button:hover{
     background-color: white;
     color: black;
+}
+
+#myForm {
+    display: flex;
+    justify-content: center;
+}
+
+#myForm .button{
+    font-size: 12px;
+    font-weight: bold;
+    font-family:inherit;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    padding: 15px 32px;
+    text-align: center;
+    transition-duration: 0.4s;
+    color: white;
+    background-color: rgba(0,0,0,.2);
+    margin-top: 20px;
+    margin-right: 10px;
+    margin-left: 10px;
+    left: 50%;
+    width: 60px;
+}
+
+#myForm .button:hover{
+    background-color: white;
+    color: black;
+}
+
+input[type="file"], input[type="submit"] {
+    display: none;
 }

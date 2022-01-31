@@ -22,9 +22,8 @@ export class Octree {
         this.nodes = {}; // Octree object
         this.scene = scene; // THREE scene from main file
 
-        const geometry = new THREE.BoxGeometry(this.size, this.size, this.size);
-        const edges = new THREE.EdgesGeometry(geometry);
-        this.cube = new THREE.LineSegments(edges, new THREE.LineBasicMaterial( { color: 0xffffff } ));
+        this.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(this.size, this.size, this.size));
+        this.cube = new THREE.LineSegments(this.geometry, new THREE.LineBasicMaterial( { color: 0xffffff } ));
 
         this.cube.visible = false;
         this.cube.material.transparent = true;
@@ -52,7 +51,6 @@ export class Octree {
             this.cube.visible = true;
             for (let i = 0; i < 100; i++) {
                 this.cube.material.opacity += 1 / 100;
-                console.log(this.cube.material.opacity);
                 await sleep(5);
             }
         // If octree has no nodes but has a coordinate, add nodes, re-insert original coordinate, and insert actual coordinate (keeps recursion)
@@ -68,5 +66,18 @@ export class Octree {
             const centerShift = new THREE.Vector3(this.size/4, this.size/4, this.size/4).multiply(centerMultiplier[iterator]);
             this.nodes[iterator] = new Octree(0, new THREE.Vector3(this.center.x, this.center.y, this.center.z).add(centerShift), this.size/2, this.scene);
         }
+    }
+
+    removeObjects3D () {
+        this.geometry.dispose();
+        this.scene.remove(this.cube);
+        for (const node in this.nodes) {
+            this.nodes[node].geometry.dispose();
+            this.scene.remove(this.nodes[node].cube);
+            if (Object.keys(this.nodes[node]).length !== 0) {
+                this.nodes[node].removeObjects3D();
+            }
+        }
+        return Promise.resolve();
     }
 }
