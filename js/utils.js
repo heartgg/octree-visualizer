@@ -1,7 +1,7 @@
 // helper functions
 
 export const sleep = (milliseconds) => {
-    return new Promise(resolve => setTimeout(resolve, milliseconds))
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
 export const csvToArray = (str, delimiter = ",") => {
@@ -29,4 +29,16 @@ export const csvToArray = (str, delimiter = ",") => {
 
     // return the array
     return arr;
+}
+
+export const max = (data) => {
+    var max = Number.MIN_VALUE;
+    data.forEach(coord => {
+        for (const key in coord) {
+            if (coord[key] > max) {
+                max = coord[key];
+            }
+        }
+    });
+    return max;
 }

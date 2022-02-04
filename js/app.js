@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'orbitcontrols';
 import { Octree } from './octree.js';
-import { sleep, csvToArray } from './utils.js';
+import { sleep, csvToArray, max } from './utils.js';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -12,6 +12,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// Sample data for an octree when users first see the website
 var data = [
     {x: 2, y: -2, z: 2},
     {x: -1, y: 1, z: 1},
@@ -22,9 +23,8 @@ var data = [
 
 var vectors = []
 var points = [];
-var octree = new Octree(0, new THREE.Vector3(0, 0, 0), 16, scene);
+var octree;
 var pointNum = 0;
-const tolerance = .01;
 var manualCam = false;
 
 document.getElementById('begin').onclick = async function(e) {
@@ -43,7 +43,7 @@ document.getElementById('begin').onclick = async function(e) {
             data = csvToArray(text);
 
             initPoints(data);
-            initOctree();
+            octree = initOctree(data);
         };
 
         reader.readAsText(input);
@@ -61,7 +61,7 @@ const material = new THREE.PointsMaterial( { size: 0.1 } );
 
 // Creates a point for every destination and sets it randomly far away
 initPoints(data);
-initOctree();
+octree = initOctree(data);
 
 var camera_pivot = new THREE.Object3D();
 var Y_AXIS = new THREE.Vector3( 0, 1, 0 );
@@ -78,7 +78,7 @@ function animate() {
     // Animate points coming in with lerp and then insert into Octree
     if (pointNum < points.length && octree) {
         const destination = vectors[pointNum];
-        if (destination.distanceTo(points[pointNum].position) > tolerance) {
+        if (destination.distanceTo(points[pointNum].position) > .01) {
             points[pointNum].position.lerp(destination, .1);
         } else if (pointNum + 1 <= points.length) {
             octree.insert(vectors[pointNum]);
@@ -95,8 +95,8 @@ function animate() {
 
 animate();
 
-function initOctree() {
-    octree = new Octree(0, new THREE.Vector3(0, 0, 0), 16, scene);
+function initOctree(data) {
+    return new Octree(0, new THREE.Vector3(0, 0, 0), max(data) * 2 + 3, scene);
 }
 
 function initPoints(data) {
