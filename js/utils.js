@@ -31,12 +31,13 @@ export const csvToArray = (str, delimiter = ",") => {
     return arr;
 }
 
+// Used to provide proper size data to octree from a maximum coordinate
 export const max = (data) => {
     var max = Number.MIN_VALUE;
     data.forEach(coord => {
         for (const key in coord) {
-            if (coord[key] > max) {
-                max = coord[key];
+            if (Math.abs(coord[key]) > max) {
+                max = Math.abs(coord[key]);
             }
         }
     });

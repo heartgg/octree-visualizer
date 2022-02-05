@@ -5,13 +5,6 @@ import { OrbitControls } from 'orbitcontrols';
 import { Octree } from './octree.js';
 import { sleep, csvToArray, max } from './utils.js';
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
 // Sample data for an octree when users first see the website
 var data = [
     {x: 2, y: -2, z: 2},
@@ -21,99 +14,134 @@ var data = [
     {x: 1.2, y: 1.3, z: -1}
 ];
 
-var vectors = []
-var points = [];
-var octree;
-var pointNum = 0;
-var manualCam = false;
+// SceneController singleton to avoid global variables where possible
+// Controls most threejs camera and rendering
+const SceneController = {
+    scene: new THREE.Scene(),
+    camera: new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000),
+    camera_pivot: new THREE.Object3D(),
+    renderer: new THREE.WebGLRenderer(),
+    controls: null,
+    manualCam: false,
+    
+    // Sets up the rendering and camera for the scene
+    setup: function () {
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(this.renderer.domElement);
 
+        this.scene.add(this.camera_pivot);
+        this.camera_pivot.add(this.camera);
+        this.positionCamera(0, 7 + max(data) * 2, 10 + max(data) * 2);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    },
+    // Function to position camera in case of different coordinate data
+    positionCamera: function (x, y, z) {
+        this.camera.position.set(x, y, z);
+        this.camera.lookAt(this.camera_pivot.position);
+    },
+    // Called every animation frame if manual cam is off
+    rotateCamera: function (angle) {
+        this.camera_pivot.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);
+    },
+    manualCamera: function (bool) {
+        this.manualCam = bool;
+    }
+}
+
+// OctreeController singleton to avoid global variables where possible
+// Controls the octree and threejs objects
+const OctreeController = {
+    octree: undefined,
+    vectors: [],
+    points: [],
+    iteration: 0,
+    pointGeometry: new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new THREE.Vector3().toArray(), 3)),
+    pointMaterial: new THREE.PointsMaterial({ size: 0.1, color: new THREE.Color(0x34c9eb) }),
+
+    // Initializes a new octree (and deletes the previous one if found)
+    initOctree: async function (scene, data) {
+        if (this.octree != undefined) await this.deleteOctree();
+        this.octree = new Octree(0, new THREE.Vector3(0, 0, 0), max(data) * 2 + 3, scene);
+    },
+    // Maps passed coordinate data to the vectors array
+    processData: function (data) {
+        this.iteration = 0;
+        this.vectors = [];
+        data.forEach(coord => {
+            this.vectors.push(new THREE.Vector3(coord.x, coord.y, coord.z));
+        });
+    },
+    // Initializes new set of point objects (and deletes the previous ones if found)
+    initPoints: function (scene) {
+        if (this.points.length != 0) this.deletePoints(scene);
+        for (let i = 0; i < this.vectors.length; i++) {
+            const point = new THREE.Points(this.pointGeometry, this.pointMaterial);
+            point.position.add(new THREE.Vector3(1, 1, 1).randomDirection().multiplyScalar(500));
+            scene.add(point);
+            this.points.push(point);
+        }
+    },
+    deletePoints: function (scene) {
+        scene.remove(...this.points);
+        this.points = [];
+    },
+    deleteOctree: async function () {
+        await this.octree.removeObjects3D();
+        this.octree = undefined;
+    },
+    // Called every animation frame to move the points and insert into octree
+    animateOctree: function () {
+        if (this.octree != undefined && this.iteration < this.points.length) {
+            if (this.vectors[this.iteration].distanceTo(this.points[this.iteration].position) > .01) {
+                this.points[this.iteration].position.lerp(this.vectors[this.iteration], .1);
+            } else if (this.iteration + 1 <= this.points.length) {
+                this.octree.insert(this.vectors[this.iteration]);
+                this.iteration++;
+            }
+        }
+    }
+}
+
+// Initial setup from sample data
+SceneController.setup();
+OctreeController.processData(data);
+OctreeController.initPoints(SceneController.scene);
+OctreeController.initOctree(SceneController.scene, data);
+
+// Event when the begin button is clicked
 document.getElementById('begin').onclick = async function(e) {
     e.preventDefault();
 
     const input = document.getElementById("csvFile").files[0];
     if (input) {
-        await octree.removeObjects3D();
-        octree = null;
-        removePoints();
-
         const reader = new FileReader();
         
         reader.onload = function (e) {
             const text = e.target.result;
             data = csvToArray(text);
 
-            initPoints(data);
-            octree = initOctree(data);
+            // If CSV data is provided, basically reset the whole scene
+            OctreeController.processData(data);
+            OctreeController.initPoints(SceneController.scene);
+            OctreeController.initOctree(SceneController.scene, data);
+            SceneController.positionCamera(0, 7 + max(data) * 2, 10 + max(data) * 2);
         };
 
         reader.readAsText(input);
     }
 
-    manualCam = true;
+    // Hide overlay and stop cam rotation
     document.getElementById("overlay").style.opacity = 0;
     await sleep(300);
     document.getElementById("overlay").style.display = "none";
+    SceneController.manualCamera(true);
 }
 
-// Sets up geometry and material for a 3D point object
-const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new THREE.Vector3().toArray(), 3));
-const material = new THREE.PointsMaterial( { size: 0.1 } );
-
-// Creates a point for every destination and sets it randomly far away
-initPoints(data);
-octree = initOctree(data);
-
-var camera_pivot = new THREE.Object3D();
-var Y_AXIS = new THREE.Vector3( 0, 1, 0 );
-
-scene.add( camera_pivot );
-camera_pivot.add( camera );
-camera.position.set( 0, 15, 25 );
-camera.lookAt( camera_pivot.position );
-
-const controls = new OrbitControls(camera, renderer.domElement);
-
 function animate() {
-
-    // Animate points coming in with lerp and then insert into Octree
-    if (pointNum < points.length && octree) {
-        const destination = vectors[pointNum];
-        if (destination.distanceTo(points[pointNum].position) > .01) {
-            points[pointNum].position.lerp(destination, .1);
-        } else if (pointNum + 1 <= points.length) {
-            octree.insert(vectors[pointNum]);
-            pointNum++;
-        }
-    }
-
-    if (!manualCam) camera_pivot.rotateOnAxis( Y_AXIS, 0.005 );
-    
-    renderer.render(scene, camera);
-
+    OctreeController.animateOctree();
+    if (!SceneController.manualCam) SceneController.rotateCamera(0.005);
+    SceneController.renderer.render(SceneController.scene, SceneController.camera);
     requestAnimationFrame(animate);
 };
 
 animate();
-
-function initOctree(data) {
-    return new Octree(0, new THREE.Vector3(0, 0, 0), max(data) * 2 + 3, scene);
-}
-
-function initPoints(data) {
-    data.forEach(coord => {
-        vectors.push(new THREE.Vector3(coord.x, coord.y, coord.z));
-    });
-    for (let i = 0; i < data.length; i++) {
-        const point = new THREE.Points(geometry, material);
-        point.position.add(new THREE.Vector3(1, 1, 1).randomDirection().multiplyScalar(500));
-        scene.add(point);
-        points.push(point);
-    }
-}
-
-function removePoints(data) {
-    scene.remove(...points);
-    vectors = [];
-    points = [];
-    pointNum = 0;
-}
