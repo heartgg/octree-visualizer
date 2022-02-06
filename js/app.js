@@ -52,8 +52,10 @@ const SceneController = {
 // Controls the octree and threejs objects
 const OctreeController = {
     octree: undefined,
+    cubeIds: {},
     vectors: [],
     points: [],
+    pointSpawns: [],
     iteration: 0,
     pointGeometry: new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new THREE.Vector3().toArray(), 3)),
     pointMaterial: new THREE.PointsMaterial({ size: 0.1, color: new THREE.Color(0x34c9eb) }),
@@ -62,6 +64,9 @@ const OctreeController = {
     initOctree: async function (scene, data) {
         if (this.octree != undefined) await this.deleteOctree();
         this.octree = new Octree(0, new THREE.Vector3(0, 0, 0), max(data) * 2 + 3, scene);
+        for (let i = 0; i < this.vectors.length; i++) {
+            this.octree.insert(this.vectors[i], this.cubeIds[i]);
+        }
     },
     // Maps passed coordinate data to the vectors array
     processData: function (data) {
@@ -76,13 +81,16 @@ const OctreeController = {
         if (this.points.length != 0) this.deletePoints(scene);
         for (let i = 0; i < this.vectors.length; i++) {
             const point = new THREE.Points(this.pointGeometry, this.pointMaterial);
-            point.position.add(new THREE.Vector3(1, 1, 1).randomDirection().multiplyScalar(500));
+            this.pointSpawns.push(new THREE.Vector3(1, 1, 1).randomDirection().multiplyScalar(500))
+            point.position.add(this.pointSpawns[i]);
             scene.add(point);
             this.points.push(point);
+            this.cubeIds[i] = [];
         }
     },
     deletePoints: function (scene) {
         scene.remove(...this.points);
+        this.pointSpawns = [];
         this.points = [];
     },
     deleteOctree: async function () {
@@ -95,8 +103,35 @@ const OctreeController = {
             if (this.vectors[this.iteration].distanceTo(this.points[this.iteration].position) > .01) {
                 this.points[this.iteration].position.lerp(this.vectors[this.iteration], .1);
             } else if (this.iteration + 1 <= this.points.length) {
-                this.octree.insert(this.vectors[this.iteration]);
+                OctreeController.cubeIds[this.iteration] = [];
+                this.octree.insert(this.vectors[this.iteration], OctreeController.cubeIds[this.iteration]);
+                console.log(OctreeController.cubeIds[this.iteration]);
                 this.iteration++;
+            }
+        }
+    },
+    animateForward: async function () {
+        if (this.octree != undefined && this.iteration < this.points.length) {
+            if (this.vectors[this.iteration].distanceTo(this.points[this.iteration].position) > .01) {
+                this.points[this.iteration].position.lerp(this.vectors[this.iteration], .1);
+            } else if (this.iteration + 1 <= this.points.length) {
+                for (let i = 0; i < this.cubeIds[this.iteration].length; i++) {
+                    SceneController.scene.getObjectById(this.cubeIds[this.iteration][i]).visible = true;
+                }
+                if (this.iteration != this.points.length - 1) this.iteration++;
+            }
+        }
+    },
+    animateBackward: async function () {
+        if (this.octree != undefined && this.iteration >= 0) {
+            if (this.points[this.iteration].position.distanceTo(this.pointSpawns[this.iteration]) > 100) {
+                const currPos = new THREE.Vector3(this.points[this.iteration].position.x, this.points[this.iteration].position.y, this.points[this.iteration].position.z);
+                this.points[this.iteration].position.add(currPos.sub(this.vectors[this.iteration]).multiplyScalar(0.1));
+            } else if (this.iteration > 0) {
+                for (let i = 0; i < this.cubeIds[this.iteration].length; i++) {
+                    SceneController.scene.getObjectById(this.cubeIds[this.iteration][i]).visible = false;
+                }
+                this.iteration--;
             }
         }
     }
@@ -138,10 +173,23 @@ document.getElementById('begin').onclick = async function(e) {
 }
 
 function animate() {
-    OctreeController.animateOctree();
+    //OctreeController.animateOctree();
     if (!SceneController.manualCam) SceneController.rotateCamera(0.005);
     SceneController.renderer.render(SceneController.scene, SceneController.camera);
     requestAnimationFrame(animate);
 };
 
 animate();
+
+window.addEventListener('keydown', function(e) {
+    switch (e.key) {
+        case "ArrowLeft":
+            OctreeController.animateBackward();
+            console.log('right');
+            break;
+        case "ArrowRight":
+            OctreeController.animateForward();
+            console.log('left');
+            break;
+    }
+});
