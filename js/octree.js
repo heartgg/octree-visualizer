@@ -26,8 +26,6 @@ export class Octree {
         this.cube = new THREE.LineSegments(this.geometry, new THREE.LineBasicMaterial( { color: 0xffffff } ));
 
         this.cube.visible = false;
-        this.cube.material.transparent = true;
-        //this.cube.material.opacity = 0;
         this.cube.position.add(center);
         this.scene.add(this.cube);
     }
@@ -49,11 +47,6 @@ export class Octree {
         } else if (this.coord === 0) {
             this.coord = coord;
             cubeIds.push(this.cube.id);
-            // this.cube.visible = true;
-            // for (let i = 0; i < 100; i++) {
-            //     this.cube.material.opacity += 1 / 100;
-            //     await sleep(5);
-            // }
         // If octree has no nodes but has a coordinate, add nodes, re-insert original coordinate, and insert actual coordinate (keeps recursion)
         } else {
             this.addNodes();

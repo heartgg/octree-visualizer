@@ -23,6 +23,7 @@ const SceneController = {
     renderer: new THREE.WebGLRenderer(),
     controls: null,
     manualCam: false,
+    manualAnim: false,
     
     // Sets up the rendering and camera for the scene
     setup: function () {
@@ -45,6 +46,9 @@ const SceneController = {
     },
     manualCamera: function (bool) {
         this.manualCam = bool;
+    },
+    manualAnimation: function (bool) {
+        this.manualAnim = bool;
     }
 }
 
@@ -57,6 +61,7 @@ const OctreeController = {
     points: [],
     pointSpawns: [],
     iteration: 0,
+    animating: 0,
     pointGeometry: new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new THREE.Vector3().toArray(), 3)),
     pointMaterial: new THREE.PointsMaterial({ size: 0.1, color: new THREE.Color(0x34c9eb) }),
 
@@ -73,6 +78,7 @@ const OctreeController = {
         this.iteration = 0;
         this.vectors = [];
         data.forEach(coord => {
+            if (isNaN(coord.x) || isNaN(coord.y) || isNaN(coord.z)) return;
             this.vectors.push(new THREE.Vector3(coord.x, coord.y, coord.z));
         });
     },
@@ -97,43 +103,31 @@ const OctreeController = {
         await this.octree.removeObjects3D();
         this.octree = undefined;
     },
-    // Called every animation frame to move the points and insert into octree
-    animateOctree: function () {
-        if (this.octree != undefined && this.iteration < this.points.length) {
-            if (this.vectors[this.iteration].distanceTo(this.points[this.iteration].position) > .01) {
-                this.points[this.iteration].position.lerp(this.vectors[this.iteration], .1);
-            } else if (this.iteration + 1 <= this.points.length) {
-                OctreeController.cubeIds[this.iteration] = [];
-                this.octree.insert(this.vectors[this.iteration], OctreeController.cubeIds[this.iteration]);
-                console.log(OctreeController.cubeIds[this.iteration]);
-                this.iteration++;
-            }
-        }
-    },
-    animateForward: async function () {
+    animateForward: function () {
         if (this.octree != undefined && this.iteration < this.points.length) {
             if (this.vectors[this.iteration].distanceTo(this.points[this.iteration].position) > .01) {
                 this.points[this.iteration].position.lerp(this.vectors[this.iteration], .1);
             } else if (this.iteration + 1 <= this.points.length) {
                 for (let i = 0; i < this.cubeIds[this.iteration].length; i++) {
-                    SceneController.scene.getObjectById(this.cubeIds[this.iteration][i]).visible = true;
+                    SceneController.scene.getObjectById(OctreeController.cubeIds[OctreeController.iteration][i]).visible = true;
                 }
-                if (this.iteration != this.points.length - 1) this.iteration++;
+                this.iteration++;
+                this.setAnimating(0);
             }
         }
     },
-    animateBackward: async function () {
+    animateBackward: function () {
         if (this.octree != undefined && this.iteration >= 0) {
             if (this.points[this.iteration].position.distanceTo(this.pointSpawns[this.iteration]) > 100) {
                 const currPos = new THREE.Vector3(this.points[this.iteration].position.x, this.points[this.iteration].position.y, this.points[this.iteration].position.z);
                 this.points[this.iteration].position.add(currPos.sub(this.vectors[this.iteration]).multiplyScalar(0.1));
-            } else if (this.iteration > 0) {
-                for (let i = 0; i < this.cubeIds[this.iteration].length; i++) {
-                    SceneController.scene.getObjectById(this.cubeIds[this.iteration][i]).visible = false;
-                }
-                this.iteration--;
+            } else if (this.iteration >= 0) {
+                this.setAnimating(0);
             }
         }
+    },
+    setAnimating: function (state) {
+        this.animating = state;
     }
 }
 
@@ -169,11 +163,12 @@ document.getElementById('begin').onclick = async function(e) {
     document.getElementById("overlay").style.opacity = 0;
     await sleep(300);
     document.getElementById("overlay").style.display = "none";
-    SceneController.manualCamera(true);
 }
 
 function animate() {
-    //OctreeController.animateOctree();
+    if (OctreeController.animating === 1) OctreeController.animateForward();
+    if (OctreeController.animating === -1) OctreeController.animateBackward();
+    if (!SceneController.manualAnim) OctreeController.animateForward();
     if (!SceneController.manualCam) SceneController.rotateCamera(0.005);
     SceneController.renderer.render(SceneController.scene, SceneController.camera);
     requestAnimationFrame(animate);
@@ -181,15 +176,26 @@ function animate() {
 
 animate();
 
+SceneController.controls.addEventListener('change', function (e) {
+    SceneController.manualCamera(true);
+});
+
 window.addEventListener('keydown', function(e) {
+    SceneController.manualAnimation(true);
+    if (OctreeController.animating != 0) return;
     switch (e.key) {
         case "ArrowLeft":
-            OctreeController.animateBackward();
-            console.log('right');
+            if (OctreeController.iteration != 0) OctreeController.iteration--;
+            OctreeController.setAnimating(-1);
+            for (let i = 0; i < OctreeController.cubeIds[OctreeController.iteration].length; i++) {
+                SceneController.scene.getObjectById(OctreeController.cubeIds[OctreeController.iteration][i]).visible = false;
+            }
+            console.log('left');
             break;
         case "ArrowRight":
-            OctreeController.animateForward();
-            console.log('left');
+            if (OctreeController.iteration == OctreeController.points.length) return;
+            OctreeController.setAnimating(1);
+            console.log('right');
             break;
     }
 });
