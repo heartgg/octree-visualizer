@@ -16,6 +16,28 @@ body {
     transition: .3s ease;
 }
 
+#controls {
+    position: fixed;
+    display: none;
+    transition: .3s ease;
+}
+
+#lbtn, #rbtn, #camrot, #auto {
+    background: none;
+    border: none;
+    color: white;
+    margin-top: 10px;
+    margin-left: 5px;
+}
+
+#rbtn, #camrot, #auto {
+    margin-left: 0px;
+}
+
+#lbtn:hover, #rbtn:hover, #camrot:hover, #auto:hover {
+    color: rgb(58, 58, 58);
+}
+
 #text{
     width: 32%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

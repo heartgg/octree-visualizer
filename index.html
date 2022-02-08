@@ -6,13 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Octree Visualizer</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/da239c2be7.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="overlay">
         <div id="text">
             <h1>The Octree Data Structure</h1>
             <p>Octree refers to a data structure where every parent node has eight child nodes. Octrees are generated recursively and are often used in 3D graphics. One application is downsampling a pointcloud to yield an accurate representation of 3D space with less points.</p>
-            <!-- <button type="submit" id="button">BEGIN</button> -->
             <form id="myForm">
                 <label class="button">
                     <input type="file" id="csvFile" accept=".csv" />
@@ -22,9 +22,14 @@
                     <input type="submit" id="begin" value="Submit" />
                     EXPLORE
                 </label>
-                
             </form>
         </div>
+    </div>
+    <div id="controls">
+        <button id="lbtn"><i class="fas fa-arrow-left fa-2x"></i></button>
+        <button id="rbtn"><i class="fas fa-arrow-right fa-2x"></i></button>
+        <button id="camrot"><i class="fas fa-sync-alt fa-2x"></i></button>
+        <button id="auto"><i class="fas fa-redo-alt fa-2x"></i></button>
     </div>
     <script type="importmap">
         {

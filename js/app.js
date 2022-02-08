@@ -161,14 +161,16 @@ document.getElementById('begin').onclick = async function(e) {
 
     // Hide overlay and stop cam rotation
     document.getElementById("overlay").style.opacity = 0;
+    document.getElementById("controls").style.opacity = 1;
     await sleep(300);
     document.getElementById("overlay").style.display = "none";
+    document.getElementById("controls").style.display = "block";
 }
 
 function animate() {
     if (OctreeController.animating === 1) OctreeController.animateForward();
     if (OctreeController.animating === -1) OctreeController.animateBackward();
-    if (!SceneController.manualAnim) OctreeController.animateForward();
+    if (!SceneController.manualAnim) OctreeController.setAnimating(1);
     if (!SceneController.manualCam) SceneController.rotateCamera(0.005);
     SceneController.renderer.render(SceneController.scene, SceneController.camera);
     requestAnimationFrame(animate);
@@ -176,26 +178,32 @@ function animate() {
 
 animate();
 
-SceneController.controls.addEventListener('change', function (e) {
-    SceneController.manualCamera(true);
-});
-
-window.addEventListener('keydown', function(e) {
+// When the left arrow button is clicked
+document.getElementById('lbtn').onclick = function (e) {
     SceneController.manualAnimation(true);
     if (OctreeController.animating != 0) return;
-    switch (e.key) {
-        case "ArrowLeft":
-            if (OctreeController.iteration != 0) OctreeController.iteration--;
-            OctreeController.setAnimating(-1);
-            for (let i = 0; i < OctreeController.cubeIds[OctreeController.iteration].length; i++) {
-                SceneController.scene.getObjectById(OctreeController.cubeIds[OctreeController.iteration][i]).visible = false;
-            }
-            console.log('left');
-            break;
-        case "ArrowRight":
-            if (OctreeController.iteration == OctreeController.points.length) return;
-            OctreeController.setAnimating(1);
-            console.log('right');
-            break;
+    if (OctreeController.iteration != 0) OctreeController.iteration--;
+    OctreeController.setAnimating(-1);
+    // Make octree cubes invisible for that iteration
+    for (let i = 0; i < OctreeController.cubeIds[OctreeController.iteration].length; i++) {
+        SceneController.scene.getObjectById(OctreeController.cubeIds[OctreeController.iteration][i]).visible = false;
     }
-});
+}
+
+// When the right button arrow is clicked
+document.getElementById('rbtn').onclick = function (e) {
+    SceneController.manualAnimation(true);
+    if (OctreeController.animating != 0) return;
+    if (OctreeController.iteration == OctreeController.points.length) return;
+    OctreeController.setAnimating(1);
+}
+
+// When the two rotation arrow button is clicked
+document.getElementById('camrot').onclick = function (e) {
+    SceneController.manualCamera(!SceneController.manualCam);
+}
+
+// When the single rotation arrow is clicked
+document.getElementById('auto').onclick = function (e) {
+    SceneController.manualAnimation(false);
+}
