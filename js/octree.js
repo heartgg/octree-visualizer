@@ -26,13 +26,11 @@ export class Octree {
         this.cube = new THREE.LineSegments(this.geometry, new THREE.LineBasicMaterial( { color: 0xffffff } ));
 
         this.cube.visible = false;
-        this.cube.material.transparent = true;
-        this.cube.material.opacity = 0;
         this.cube.position.add(center);
         this.scene.add(this.cube);
     }
 
-    async insert (coord) {
+    insert (coord, cubeIds) {
         // If octree has nodes, find approperiate octant and insert the coordinate (keeps recursion)
         if (Object.keys(this.nodes).length !== 0) {
             const multiplier = new THREE.Vector3();
@@ -42,22 +40,18 @@ export class Octree {
 
             for (const iterator in centerMultiplier) {
                 if (multiplier.equals(centerMultiplier[iterator])) {
-                    this.nodes[iterator].insert(coord);
+                    this.nodes[iterator].insert(coord, cubeIds);
                 }
             }
         // If octree has no coordinate, place coordinate into the node and end recursion
         } else if (this.coord === 0) {
             this.coord = coord;
-            this.cube.visible = true;
-            for (let i = 0; i < 100; i++) {
-                this.cube.material.opacity += 1 / 100;
-                await sleep(5);
-            }
+            cubeIds.push(this.cube.id);
         // If octree has no nodes but has a coordinate, add nodes, re-insert original coordinate, and insert actual coordinate (keeps recursion)
         } else {
             this.addNodes();
-            this.insert(this.coord);
-            this.insert(coord);
+            this.insert(this.coord, cubeIds);
+            this.insert(coord, cubeIds);
         }
     }
 
